@@ -1,0 +1,9 @@
+- name: apply target configuration to target nodes
+  hosts: all
+  remote_user: ec2-user
+  gather_facts: no
+  become: yes
+  vars_files:
+    - variable.yml
+  roles:
+    - users

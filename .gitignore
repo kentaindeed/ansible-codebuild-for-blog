@@ -1,0 +1,14 @@
+# ansible 
+private.key
+# variable.yml
+hosts
+*.pem
+*.pem.pub
+*.pub
+
+# terraform
+terraform.tfstate
+terraform.tfstate.backup
+.terraform
+.terraform.lock.hcl
+provider.tf

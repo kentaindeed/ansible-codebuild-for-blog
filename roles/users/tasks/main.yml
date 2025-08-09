@@ -1,0 +1,59 @@
+
+# linux user の作成
+- name:  create linux users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    state: present
+  with_items:
+    - "{{ linux_user }}"
+
+
+# 秘密鍵の作成 (ローカルで作成)
+# ユーザごとにローカルディレクトリ作成
+- name: Create local directory for each user
+  ansible.builtin.file:
+    path: "./{{ item.name }}/"
+    state: directory
+    mode: '0700'
+  loop: "{{ linux_user }}"
+  delegate_to: localhost
+  run_once: false
+
+# ユーザごとにローカルでSSH鍵ペア生成 (pem とpub key を作成)
+- name: Generate SSH key pair for each user
+  community.crypto.openssh_keypair:
+    path: "./{{ item.name }}/{{ item.name }}.pem"
+    # path_pub: "./{{ item.name }}/{{ item.name }}.pub"
+    type: ed25519
+    mode: '0600'
+  loop: "{{ linux_user }}"
+  delegate_to: localhost
+  run_once: false
+
+  # .ssh ディレクトリを作成
+- name: Create .ssh directory
+  ansible.builtin.file:
+    path: "/home/{{ item.name }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+  loop: "{{ linux_user }}"
+  run_once: false
+
+# pub key をローカルからホストに転送
+- name: Copy public key to remote server
+  ansible.builtin.copy:
+    src: "./{{ item.name }}/{{ item.name }}.pem.pub"
+    dest: "/home/{{ item.name }}/.ssh/authorized_keys"
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: '0600'
+  loop: "{{ linux_user }}"
+  run_once: false
+
+
+
+
+

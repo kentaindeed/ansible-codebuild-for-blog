@@ -1,0 +1,46 @@
+# ansible をcode build から実行する
+version: 0.2
+
+env:
+  variables:
+    my-ssh-key: "my-ssh-key"
+    private-ip: "private-ip"
+
+phases:
+  install:
+    commands:
+      - echo "install ansible and python"
+      - sudo yum update -y
+      # - sudo yum install epel-release -y
+      - sudo yum install -y ansible
+      - sudo yum install -y python3 python3-pip
+      # - sudo yum install -y openssh-server
+
+# pre build ssh 接続準備
+  pre_build:
+    commands:
+      - echo "start fetching private key from parameter store"
+      - sed -i 's/# StrictHostKeyChecking ask/StrictHostKeyChecking no/' /etc/ssh/ssh_config
+      - aws ssm get-parameter --name "my-ssh-key" --with-decryption --query Parameter.Value --output text > private_key
+      - cat private_key
+      - chmod 600 private_key
+      - echo "finish fetching hosts from parameter store"
+
+
+
+# ansible 実行
+  build:
+    commands:
+      - echo "start executing ansible"
+      - ansible-playbook -i "private-ip," target.yml --private-key private_key
+
+
+# artifact の保存 ( s3 に秘密鍵と public key を保存)
+  post_build:
+    commands:
+      - echo "start saving artifact to s3"
+      - aws s3 cp private_key s3://ansible-linux-users/private_key
+      - aws s3 cp public_key s3://ansible-linux-users/authorized_keys
+
+
+# 

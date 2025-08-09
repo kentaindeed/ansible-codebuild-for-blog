@@ -1,0 +1,2 @@
+linux_user:
+  - { name: "test", password: "test" }
